@@ -4,5 +4,8 @@ __pycache__/
 .venv/
 .DS_Store
 *.log
+*.aux
+*.out
+*.toc
 data/
 checkpoints/

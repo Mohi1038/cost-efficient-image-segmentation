@@ -247,12 +247,12 @@
         <h1>Cost-Efficient Salient Object Segmentation under a Compute Budget</h1>
 <p><strong>Course</strong>: CSL7360: Computer Vision — Assignment 2<br />
 <strong>Institution</strong>: Indian Institute of Technology Jodhpur<br />
-<strong>Author</strong>: Mohit (Roll No: M24CSE018)<br />
+<strong>Author</strong>: Mohit (Roll No: B23CS1038)<br />
 <strong>Track</strong>: Track B (Fully Convolutional Network Built from Scratch in PyTorch)<br />
 <strong>Target Architecture</strong>: <code>FastSaliencyUNet</code><br />
 <strong>Execution Environment</strong>: Apple M4 (ARM64 Apple Silicon), Single-Core Timed CPU Execution  </p>
 <hr />
-<h2>1. Executive Summary &amp; Key Metric Scoreboard</h2>
+<h2>1. Executive Summary</h2>
 <p>This report presents an end-to-end, ultra-compact fully convolutional neural network pipeline—<strong>FastSaliencyUNet</strong>—engineered from first principles to solve salient object segmentation under strict operational hardware constraints:
 1. <strong>Single-threaded CPU runtime budget</strong>: $T_{CPU} \le 50.0\text{ ms}$ per $256 \times 256$ image.
 2. <strong>On-disk parameter storage budget</strong>: $S_{disk} \le 4.0\text{ MiB}$ ($4,194,304\text{ bytes}$).
@@ -260,35 +260,12 @@
    $$\text{CES} = Q \left[ 1 - 0.20 \max\left(0, \frac{T_{CPU} - 50}{50}\right) - 0.10 \max\left(0, \frac{S_{disk} - 4.194304}{4.194304}\right) \right]$$
    where the segmentation quality index is:
    $$Q = 0.70 \times \text{mIoU} + 0.30 \times \text{BF1}$$</p>
-<p>By synthesizing depthwise separable convolutions, inverted residual bottlenecks, dilated receptive field expansion, multi-scale lateral skip fusions, and half-precision (<code>float16</code>) weight serialization, <strong>FastSaliencyUNet</strong> achieves outstanding efficiency:</p>
-<div style="display: flex; gap: 15px; margin: 25px 0; flex-wrap: wrap;">
-  <div style="flex: 1; min-width: 180px; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 16px; text-align: center;">
-    <div style="font-size: 0.85rem; color: #1e40af; font-weight: 600; text-transform: uppercase;">Total Parameters</div>
-    <div style="font-size: 1.8rem; font-weight: 800; color: #1e3a8a; margin: 4px 0;">118,297</div>
-    <div style="font-size: 0.8rem; color: #3b82f6;">Zero Pretrained Weights</div>
-  </div>
-  <div style="flex: 1; min-width: 180px; background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 8px; padding: 16px; text-align: center;">
-    <div style="font-size: 0.85rem; color: #065f46; font-weight: 600; text-transform: uppercase;">Disk Footprint</div>
-    <div style="font-size: 1.8rem; font-weight: 800; color: #047857; margin: 4px 0;">300,819 B</div>
-    <div style="font-size: 0.8rem; color: #10b981;">0.287 MiB (7.17% of Budget)</div>
-  </div>
-  <div style="flex: 1; min-width: 180px; background: #fef3c7; border: 1px solid #fde68a; border-radius: 8px; padding: 16px; text-align: center;">
-    <div style="font-size: 0.85rem; color: #92400e; font-weight: 600; text-transform: uppercase;">Single-Core CPU Time</div>
-    <div style="font-size: 1.8rem; font-weight: 800; color: #b45309; margin: 4px 0;">23.09 ms</div>
-    <div style="font-size: 0.8rem; color: #d97706;">53.8% Headroom Under 50ms</div>
-  </div>
-  <div style="flex: 1; min-width: 180px; background: #fdf2f8; border: 1px solid #fbcfe8; border-radius: 8px; padding: 16px; text-align: center;">
-    <div style="font-size: 0.85rem; color: #9d174d; font-weight: 600; text-transform: uppercase;">Budget Penalty</div>
-    <div style="font-size: 1.8rem; font-weight: 800; color: #be185d; margin: 4px 0;">0.00 %</div>
-    <div style="font-size: 0.8rem; color: #ec4899;">100% Quality Retained</div>
-  </div>
-  <div style="flex: 1; min-width: 180px; background: #f5f3ff; border: 1px solid #ddd6fe; border-radius: 8px; padding: 16px; text-align: center;">
-    <div style="font-size: 0.85rem; color: #5b21b6; font-weight: 600; text-transform: uppercase;">Test Set CES Score</div>
-    <div style="font-size: 1.8rem; font-weight: 800; color: #6d28d9; margin: 4px 0;">0.5707</div>
-    <div style="font-size: 0.8rem; color: #8b5cf6;">DUTS-TE Benchmark</div>
-  </div>
-</div>
-
+<p>By synthesizing depthwise separable convolutions, inverted residual bottlenecks, dilated receptive field expansion, multi-scale lateral skip fusions, and half-precision (<code>float16</code>) weight serialization, <strong>FastSaliencyUNet</strong> achieves:
+- <strong>Total Parameters</strong>: 118,297 parameters (built and trained strictly from scratch with zero pre-trained weights).
+- <strong>On-disk Storage ($S_{disk}$)</strong>: 300,819 bytes ($0.287\text{ MiB}$), utilizing only $7.17\%$ of the 4.0 MiB allowance.
+- <strong>Single-Core CPU Runtime ($T_{CPU}$)</strong>: 23.09 ms, providing $53.8\%$ safety headroom beneath the 50 ms budget limit.
+- <strong>Budget Penalties</strong>: Exactly $0.00\%$ (both time and storage penalties evaluate to zero).
+- <strong>CES Score</strong>: <strong>0.5707</strong> on DUTS-TE and <strong>0.9696</strong> on real-world captured campus photos.</p>
 <hr />
 <h2>2. Problem Formulation &amp; CES Optimization Landscape</h2>
 <p>In edge-device computer vision and embedded real-time robotics, raw pixel accuracy is meaningless if inference latency violates hardware refresh deadlines or if model binaries exceed embedded flash storage limits.</p>
@@ -308,8 +285,40 @@ $$\text{CES} = Q \times \max\left(0, 1 - \text{Penalty}} - 4.194304}{4.194304<em
 <hr />
 <h2>3. Network Architecture &amp; Computational Topology</h2>
 <h3>3.1 FastSaliencyUNet Topology</h3>
-<p>The network follows an ultra-efficient asymmetric encoder-decoder topology. The complete signal flow, channel dimensions, and skip connection routing are illustrated below:</p>
-<p><img alt="FastSaliencyUNet Architecture Topology" src="figures/architecture_diagram.png" /></p>
+<p>The network follows an ultra-efficient asymmetric encoder-decoder topology. The complete signal flow, channel dimensions, and skip connection routing are illustrated in the Mermaid lifecycle flowchart below:</p>
+<pre class="codehilite"><code class="language-mermaid">flowchart TD
+    classDef input fill:#f8fafc,stroke:#64748b,stroke-width:2px,color:#0f172a,font-size:12px
+    classDef stem fill:#e0e7ff,stroke:#4338ca,stroke-width:2px,color:#0f172a,font-size:12px
+    classDef enc fill:#dbeafe,stroke:#1d4ed8,stroke-width:2px,color:#0f172a,font-size:12px
+    classDef bot fill:#fef3c7,stroke:#d97706,stroke-width:2px,color:#0f172a,font-size:12px
+    classDef dec fill:#d1fae5,stroke:#059669,stroke-width:2px,color:#0f172a,font-size:12px
+    classDef head fill:#fce7f3,stroke:#db2777,stroke-width:2px,color:#0f172a,font-size:12px
+    classDef out fill:#f8fafc,stroke:#0f172a,stroke-width:2px,color:#0f172a,font-size:12px
+
+    In[&quot;&lt;b&gt;Input Image&lt;/b&gt;&lt;br/&gt;256×256×3 RGB&quot;]:::input --&gt; Stem[&quot;&lt;b&gt;Stem Convolution&lt;/b&gt;&lt;br/&gt;3×3 Conv, Stride 2&lt;br/&gt;128×128×16&quot;]:::stem
+
+    subgraph Encoder [&quot;ENCODER BACKBONE (Inverted Residual Bottlenecks)&quot;]
+        Stem --&gt; S1[&quot;&lt;b&gt;Stage 1: IRB&lt;/b&gt;&lt;br/&gt;Expansion t=2&lt;br/&gt;128×128×24&quot;]:::enc
+        S1 --&gt; S2[&quot;&lt;b&gt;Stage 2: IRB × 2&lt;/b&gt;&lt;br/&gt;Stride 2 Downsample&lt;br/&gt;64×64×32&quot;]:::enc
+        S2 --&gt; S3[&quot;&lt;b&gt;Stage 3: IRB × 2&lt;/b&gt;&lt;br/&gt;Stride 2 Downsample&lt;br/&gt;32×32×64&quot;]:::enc
+    end
+
+    S3 --&gt; Bot[&quot;&lt;b&gt;Bottleneck (Stage 4)&lt;/b&gt;&lt;br/&gt;Stride 2, Dilated Conv (d=2)&lt;br/&gt;16×16×96 (Expanded Receptive Field)&quot;]:::bot
+
+    subgraph Decoder [&quot;DECODER (Bilinear Upsampling + Lateral Skip Fusion)&quot;]
+        Bot --&gt; Dec3[&quot;&lt;b&gt;Decoder 3&lt;/b&gt;&lt;br/&gt;Bilinear Up (2×) + DW-Sep Conv&lt;br/&gt;32×32×48&quot;]:::dec
+        Dec3 --&gt; Dec2[&quot;&lt;b&gt;Decoder 2&lt;/b&gt;&lt;br/&gt;Bilinear Up (2×) + DW-Sep Conv&lt;br/&gt;64×64×32&quot;]:::dec
+        Dec2 --&gt; Dec1[&quot;&lt;b&gt;Decoder 1&lt;/b&gt;&lt;br/&gt;Bilinear Up (2×) + DW-Sep Conv&lt;br/&gt;128×128×24&quot;]:::dec
+    end
+
+    S3 -. &quot;Lateral Skip 3 (32×32, 64ch)&quot; .-&gt; Dec3
+    S2 -. &quot;Lateral Skip 2 (64×64, 32ch)&quot; .-&gt; Dec2
+    S1 -. &quot;Lateral Skip 1 (128×128, 24ch)&quot; .-&gt; Dec1
+
+    Dec1 --&gt; Head[&quot;&lt;b&gt;Output Prediction Head&lt;/b&gt;&lt;br/&gt;Bilinear Up (2×) + 3×3 Conv + 1×1 Conv&lt;br/&gt;256×256×1 Logits&quot;]:::head
+    Head --&gt; Out[&quot;&lt;b&gt;Binary Mask Output&lt;/b&gt;&lt;br/&gt;Sigmoid ≥ 0.5 Threshold&lt;br/&gt;256×256 uint8 {0, 255}&quot;]:::out
+</code></pre>
+
 <h3>3.2 Key Architectural Innovations</h3>
 <h4>1. Depthwise Separable Convolutions</h4>
 <p>Standard $3 \times 3$ convolution consumes $9 \times C_{in} \times C_{out}$ multiply-accumulate (MAC) operations per spatial location. Depthwise separable convolution decomposes this into:
@@ -1056,6 +1065,7 @@ python evaluate.py --skip-timing
 <p>the proposed model completely eliminates all compute budget penalties ($\text{Penalty} = 0.00\%$) and achieves the highest overall Cost-Efficient Segmentation score ($\text{CES} = \mathbf{0.5707}$ on DUTS-TE, $\mathbf{0.9696}$ on real-world captured photos).</p>
     </div>
     
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
     <script>
     // Wrap tables in table-wrapper for smooth scrolling
     document.querySelectorAll('table').forEach(tbl => {
@@ -1064,6 +1074,18 @@ python evaluate.py --skip-timing
         tbl.parentNode.insertBefore(wrap, tbl);
         wrap.appendChild(tbl);
     });
+
+    // Render Mermaid code blocks
+    document.querySelectorAll('pre code').forEach(function(codeBlock) {
+        if (codeBlock.textContent.trim().startsWith('flowchart') || codeBlock.classList.contains('language-mermaid')) {
+            const pre = codeBlock.parentNode;
+            const div = document.createElement('div');
+            div.className = 'mermaid';
+            div.textContent = codeBlock.textContent;
+            pre.parentNode.replaceChild(div, pre);
+        }
+    });
+    mermaid.initialize({ startOnLoad: true, theme: 'default' });
     </script>
 </body>
 </html>

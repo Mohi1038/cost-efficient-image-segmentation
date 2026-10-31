@@ -1,7 +1,7 @@
 # CSL7360: Computer Vision — Assignment 2
 ## Cost-Efficient Saliency Segmentation under a Compute Budget
 
-**Student Name / Roll Number**: Mohit / M24CSE018  
+**Student Name / Roll Number**: Mohit / B23CS1038  
 **Institution**: Indian Institute of Technology Jodhpur  
 **Track Chosen**: Track B (Custom Small CNN — `FastSaliencyUNet`)
 

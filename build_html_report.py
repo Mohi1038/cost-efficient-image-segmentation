@@ -264,6 +264,7 @@ def build_html_report():
         {html_body}
     </div>
     
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
     <script>
     // Wrap tables in table-wrapper for smooth scrolling
     document.querySelectorAll('table').forEach(tbl => {{
@@ -272,6 +273,18 @@ def build_html_report():
         tbl.parentNode.insertBefore(wrap, tbl);
         wrap.appendChild(tbl);
     }});
+
+    // Render Mermaid code blocks
+    document.querySelectorAll('pre code').forEach(function(codeBlock) {{
+        if (codeBlock.textContent.trim().startsWith('flowchart') || codeBlock.classList.contains('language-mermaid')) {{
+            const pre = codeBlock.parentNode;
+            const div = document.createElement('div');
+            div.className = 'mermaid';
+            div.textContent = codeBlock.textContent;
+            pre.parentNode.replaceChild(div, pre);
+        }}
+    }});
+    mermaid.initialize({{ startOnLoad: true, theme: 'default' }});
     </script>
 </body>
 </html>

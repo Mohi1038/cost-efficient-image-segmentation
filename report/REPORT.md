@@ -1,14 +1,14 @@
 # Cost-Efficient Salient Object Segmentation under a Compute Budget
 **Course**: CSL7360: Computer Vision — Assignment 2  
 **Institution**: Indian Institute of Technology Jodhpur  
-**Author**: Mohit (Roll No: M24CSE018)  
+**Author**: Mohit (Roll No: B23CS1038)  
 **Track**: Track B (Fully Convolutional Network Built from Scratch in PyTorch)  
 **Target Architecture**: `FastSaliencyUNet`  
 **Execution Environment**: Apple M4 (ARM64 Apple Silicon), Single-Core Timed CPU Execution  
 
 ---
 
-## 1. Executive Summary & Key Metric Scoreboard
+## 1. Executive Summary
 
 This report presents an end-to-end, ultra-compact fully convolutional neural network pipeline—**FastSaliencyUNet**—engineered from first principles to solve salient object segmentation under strict operational hardware constraints:
 1. **Single-threaded CPU runtime budget**: $T_{CPU} \le 50.0\text{ ms}$ per $256 \times 256$ image.
@@ -18,35 +18,12 @@ This report presents an end-to-end, ultra-compact fully convolutional neural net
    where the segmentation quality index is:
    $$Q = 0.70 \times \text{mIoU} + 0.30 \times \text{BF1}$$
 
-By synthesizing depthwise separable convolutions, inverted residual bottlenecks, dilated receptive field expansion, multi-scale lateral skip fusions, and half-precision (`float16`) weight serialization, **FastSaliencyUNet** achieves outstanding efficiency:
-
-<div style="display: flex; gap: 15px; margin: 25px 0; flex-wrap: wrap;">
-  <div style="flex: 1; min-width: 180px; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 16px; text-align: center;">
-    <div style="font-size: 0.85rem; color: #1e40af; font-weight: 600; text-transform: uppercase;">Total Parameters</div>
-    <div style="font-size: 1.8rem; font-weight: 800; color: #1e3a8a; margin: 4px 0;">118,297</div>
-    <div style="font-size: 0.8rem; color: #3b82f6;">Zero Pretrained Weights</div>
-  </div>
-  <div style="flex: 1; min-width: 180px; background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 8px; padding: 16px; text-align: center;">
-    <div style="font-size: 0.85rem; color: #065f46; font-weight: 600; text-transform: uppercase;">Disk Footprint</div>
-    <div style="font-size: 1.8rem; font-weight: 800; color: #047857; margin: 4px 0;">300,819 B</div>
-    <div style="font-size: 0.8rem; color: #10b981;">0.287 MiB (7.17% of Budget)</div>
-  </div>
-  <div style="flex: 1; min-width: 180px; background: #fef3c7; border: 1px solid #fde68a; border-radius: 8px; padding: 16px; text-align: center;">
-    <div style="font-size: 0.85rem; color: #92400e; font-weight: 600; text-transform: uppercase;">Single-Core CPU Time</div>
-    <div style="font-size: 1.8rem; font-weight: 800; color: #b45309; margin: 4px 0;">23.09 ms</div>
-    <div style="font-size: 0.8rem; color: #d97706;">53.8% Headroom Under 50ms</div>
-  </div>
-  <div style="flex: 1; min-width: 180px; background: #fdf2f8; border: 1px solid #fbcfe8; border-radius: 8px; padding: 16px; text-align: center;">
-    <div style="font-size: 0.85rem; color: #9d174d; font-weight: 600; text-transform: uppercase;">Budget Penalty</div>
-    <div style="font-size: 1.8rem; font-weight: 800; color: #be185d; margin: 4px 0;">0.00 %</div>
-    <div style="font-size: 0.8rem; color: #ec4899;">100% Quality Retained</div>
-  </div>
-  <div style="flex: 1; min-width: 180px; background: #f5f3ff; border: 1px solid #ddd6fe; border-radius: 8px; padding: 16px; text-align: center;">
-    <div style="font-size: 0.85rem; color: #5b21b6; font-weight: 600; text-transform: uppercase;">Test Set CES Score</div>
-    <div style="font-size: 1.8rem; font-weight: 800; color: #6d28d9; margin: 4px 0;">0.5707</div>
-    <div style="font-size: 0.8rem; color: #8b5cf6;">DUTS-TE Benchmark</div>
-  </div>
-</div>
+By synthesizing depthwise separable convolutions, inverted residual bottlenecks, dilated receptive field expansion, multi-scale lateral skip fusions, and half-precision (`float16`) weight serialization, **FastSaliencyUNet** achieves:
+- **Total Parameters**: 118,297 parameters (built and trained strictly from scratch with zero pre-trained weights).
+- **On-disk Storage ($S_{disk}$)**: 300,819 bytes ($0.287\text{ MiB}$), utilizing only $7.17\%$ of the 4.0 MiB allowance.
+- **Single-Core CPU Runtime ($T_{CPU}$)**: 23.09 ms, providing $53.8\%$ safety headroom beneath the 50 ms budget limit.
+- **Budget Penalties**: Exactly $0.00\%$ (both time and storage penalties evaluate to zero).
+- **CES Score**: **0.5707** on DUTS-TE and **0.9696** on real-world captured campus photos.
 
 ---
 
@@ -75,9 +52,41 @@ The figure below visualizes the two-dimensional CES objective landscape alongsid
 
 ### 3.1 FastSaliencyUNet Topology
 
-The network follows an ultra-efficient asymmetric encoder-decoder topology. The complete signal flow, channel dimensions, and skip connection routing are illustrated below:
+The network follows an ultra-efficient asymmetric encoder-decoder topology. The complete signal flow, channel dimensions, and skip connection routing are illustrated in the Mermaid lifecycle flowchart below:
 
-![FastSaliencyUNet Architecture Topology](figures/architecture_diagram.png)
+```mermaid
+flowchart TD
+    classDef input fill:#f8fafc,stroke:#64748b,stroke-width:2px,color:#0f172a,font-size:12px
+    classDef stem fill:#e0e7ff,stroke:#4338ca,stroke-width:2px,color:#0f172a,font-size:12px
+    classDef enc fill:#dbeafe,stroke:#1d4ed8,stroke-width:2px,color:#0f172a,font-size:12px
+    classDef bot fill:#fef3c7,stroke:#d97706,stroke-width:2px,color:#0f172a,font-size:12px
+    classDef dec fill:#d1fae5,stroke:#059669,stroke-width:2px,color:#0f172a,font-size:12px
+    classDef head fill:#fce7f3,stroke:#db2777,stroke-width:2px,color:#0f172a,font-size:12px
+    classDef out fill:#f8fafc,stroke:#0f172a,stroke-width:2px,color:#0f172a,font-size:12px
+
+    In["<b>Input Image</b><br/>256×256×3 RGB"]:::input --> Stem["<b>Stem Convolution</b><br/>3×3 Conv, Stride 2<br/>128×128×16"]:::stem
+    
+    subgraph Encoder ["ENCODER BACKBONE (Inverted Residual Bottlenecks)"]
+        Stem --> S1["<b>Stage 1: IRB</b><br/>Expansion t=2<br/>128×128×24"]:::enc
+        S1 --> S2["<b>Stage 2: IRB × 2</b><br/>Stride 2 Downsample<br/>64×64×32"]:::enc
+        S2 --> S3["<b>Stage 3: IRB × 2</b><br/>Stride 2 Downsample<br/>32×32×64"]:::enc
+    end
+
+    S3 --> Bot["<b>Bottleneck (Stage 4)</b><br/>Stride 2, Dilated Conv (d=2)<br/>16×16×96 (Expanded Receptive Field)"]:::bot
+
+    subgraph Decoder ["DECODER (Bilinear Upsampling + Lateral Skip Fusion)"]
+        Bot --> Dec3["<b>Decoder 3</b><br/>Bilinear Up (2×) + DW-Sep Conv<br/>32×32×48"]:::dec
+        Dec3 --> Dec2["<b>Decoder 2</b><br/>Bilinear Up (2×) + DW-Sep Conv<br/>64×64×32"]:::dec
+        Dec2 --> Dec1["<b>Decoder 1</b><br/>Bilinear Up (2×) + DW-Sep Conv<br/>128×128×24"]:::dec
+    end
+
+    S3 -. "Lateral Skip 3 (32×32, 64ch)" .-> Dec3
+    S2 -. "Lateral Skip 2 (64×64, 32ch)" .-> Dec2
+    S1 -. "Lateral Skip 1 (128×128, 24ch)" .-> Dec1
+
+    Dec1 --> Head["<b>Output Prediction Head</b><br/>Bilinear Up (2×) + 3×3 Conv + 1×1 Conv<br/>256×256×1 Logits"]:::head
+    Head --> Out["<b>Binary Mask Output</b><br/>Sigmoid ≥ 0.5 Threshold<br/>256×256 uint8 {0, 255}"]:::out
+```
 
 ### 3.2 Key Architectural Innovations
 

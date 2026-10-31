@@ -1,0 +1,31 @@
+flowchart TD
+    classDef input fill:#f8fafc,stroke:#64748b,stroke-width:2px,color:#0f172a,font-size:11px
+    classDef stem fill:#e0e7ff,stroke:#4338ca,stroke-width:2px,color:#0f172a,font-size:11px
+    classDef enc fill:#dbeafe,stroke:#1d4ed8,stroke-width:2px,color:#0f172a,font-size:11px
+    classDef bot fill:#fef3c7,stroke:#d97706,stroke-width:2px,color:#0f172a,font-size:11px
+    classDef dec fill:#d1fae5,stroke:#059669,stroke-width:2px,color:#0f172a,font-size:11px
+    classDef head fill:#fce7f3,stroke:#db2777,stroke-width:2px,color:#0f172a,font-size:11px
+    classDef out fill:#f8fafc,stroke:#0f172a,stroke-width:2px,color:#0f172a,font-size:11px
+
+    In["<b>Input Image</b><br/>256×256×3 RGB"]:::input --> Stem["<b>Stem Conv</b><br/>3×3 Conv, Stride 2<br/>128×128×16"]:::stem
+    
+    subgraph Encoder ["ENCODER BACKBONE (Inverted Residual Bottlenecks)"]
+        Stem --> S1["<b>Stage 1: IRB</b><br/>Expansion t=2<br/>128×128×24"]:::enc
+        S1 --> S2["<b>Stage 2: IRB × 2</b><br/>Stride 2 Downsampling<br/>64×64×32"]:::enc
+        S2 --> S3["<b>Stage 3: IRB × 2</b><br/>Stride 2 Downsampling<br/>32×32×64"]:::enc
+    end
+
+    S3 --> Bot["<b>Bottleneck (Stage 4)</b><br/>Stride 2, Dilated Conv (d=2)<br/>16×16×96 (Expanded Receptive Field)"]:::bot
+
+    subgraph Decoder ["DECODER (Bilinear Upsampling + Lateral Skip Fusion)"]
+        Bot --> Dec3["<b>Decoder 3</b><br/>Bilinear Up (2×) + DW-Sep Conv<br/>32×32×48"]:::dec
+        Dec3 --> Dec2["<b>Decoder 2</b><br/>Bilinear Up (2×) + DW-Sep Conv<br/>64×64×32"]:::dec
+        Dec2 --> Dec1["<b>Decoder 1</b><br/>Bilinear Up (2×) + DW-Sep Conv<br/>128×128×24"]:::dec
+    end
+
+    S3 -. "Lateral Skip 3 (32×32, 64ch)" .-> Dec3
+    S2 -. "Lateral Skip 2 (64×64, 32ch)" .-> Dec2
+    S1 -. "Lateral Skip 1 (128×128, 24ch)" .-> Dec1
+
+    Dec1 --> Head["<b>Output Head</b><br/>Bilinear Up (2×) + 3×3 Conv + 1×1 Conv<br/>256×256×1 Logits"]:::head
+    Head --> Out["<b>Binary Mask Output</b><br/>Sigmoid ≥ 0.5 Thresholding<br/>256×256 uint8 {0, 255}"]:::out
