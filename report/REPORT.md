@@ -50,14 +50,14 @@ The figure below visualizes the two-dimensional CES objective landscape alongsid
 
 ## 3. Network Architecture & Computational Topology
 
-### 3.1 FastSaliencyUNet Topology
+### 3.1 FastSaliencyUNet System Architecture & Pipeline Design
 
-The network follows an ultra-efficient asymmetric encoder-decoder topology. The complete signal flow, channel dimensions, and skip connection routing are illustrated in the architecture lifecycle flowchart below:
+The network follows an ultra-efficient modular software architecture and system design topology. The complete tiered signal flow—spanning client photo ingestion, multi-scale feature extraction, global receptive bottlenecking, lateral synthesis, output mask serving, and the hardware governance bus—is illustrated below:
 
-![FastSaliencyUNet Architecture Flowchart](figures/architecture_mermaid.png)
+![FastSaliencyUNet Software System Design & Architecture](figures/architecture_system_design.png)
 
 <details>
-<summary><b>Click to view native Mermaid flowchart specification</b></summary>
+<summary><b>Click to view component-level specification</b></summary>
 
 ```mermaid
 flowchart TD

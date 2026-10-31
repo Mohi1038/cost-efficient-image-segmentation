@@ -116,13 +116,13 @@ As demonstrated in Figure~\ref{fig:ces_landscape}, the CES formulation introduce
 
 \section{Architecture Design: FastSaliencyUNet}
 
-\subsection{Topological Overview and Flowchart}
-To deliver dense pixel-level masks while respecting cache locality and arithmetic limits, we formulated \textbf{FastSaliencyUNet}. Figure~\ref{fig:architecture} presents the architecture diagram structured as an SDLC-style stage flowchart created with Mermaid:
+\subsection{System Architecture and Pipeline Topology}
+To deliver dense pixel-level masks while respecting hardware limits and cache locality, we structured \textbf{FastSaliencyUNet} as an enterprise-grade modular system. Figure~\ref{fig:architecture} presents the complete software and system design diagram, illustrating the data ingestion subsystem, multi-scale feature encoder, dilated bottleneck core, lateral synthesis decoder, and output serving tier alongside the system governance and hardware enforcement bus:
 
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=0.98\textwidth]{figures/architecture_mermaid.png}
-    \caption{\textbf{FastSaliencyUNet Architecture Flowchart (Mermaid Lifecycle Diagram).} The pipeline processes $256\times256\times3$ input photos through an immediate stride-2 stem, an inverted residual bottleneck encoder, a dilated bottleneck ($d=2$), and a symmetric bilinear upsampling decoder with multi-scale skip fusions.}
+    \includegraphics[width=\textwidth]{figures/architecture_system_design.png}
+    \caption{\textbf{FastSaliencyUNet System Architecture and Component Design.} Comprehensive architectural breakdown detailing Tier 1 (Ingestion \& Standardizer), Tier 2 (Encoder Core), Tier 3 (Dilated Bottleneck Engine), Tier 4 (Decoder Synthesis), and Tier 5 (Output Serving) synchronized via the Hardware Enforcement Bus.}
     \label{fig:architecture}
 \end{figure}
 
