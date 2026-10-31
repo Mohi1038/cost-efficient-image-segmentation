@@ -52,7 +52,12 @@ The figure below visualizes the two-dimensional CES objective landscape alongsid
 
 ### 3.1 FastSaliencyUNet Topology
 
-The network follows an ultra-efficient asymmetric encoder-decoder topology. The complete signal flow, channel dimensions, and skip connection routing are illustrated in the Mermaid lifecycle flowchart below:
+The network follows an ultra-efficient asymmetric encoder-decoder topology. The complete signal flow, channel dimensions, and skip connection routing are illustrated in the architecture lifecycle flowchart below:
+
+![FastSaliencyUNet Architecture Flowchart](figures/architecture_mermaid.png)
+
+<details>
+<summary><b>Click to view native Mermaid flowchart specification</b></summary>
 
 ```mermaid
 flowchart TD
@@ -87,6 +92,7 @@ flowchart TD
     Dec1 --> Head["<b>Output Prediction Head</b><br/>Bilinear Up (2×) + 3×3 Conv + 1×1 Conv<br/>256×256×1 Logits"]:::head
     Head --> Out["<b>Binary Mask Output</b><br/>Sigmoid ≥ 0.5 Threshold<br/>256×256 uint8 {0, 255}"]:::out
 ```
+</details>
 
 ### 3.2 Key Architectural Innovations
 

@@ -285,7 +285,12 @@ $$\text{CES} = Q \times \max\left(0, 1 - \text{Penalty}} - 4.194304}{4.194304<em
 <hr />
 <h2>3. Network Architecture &amp; Computational Topology</h2>
 <h3>3.1 FastSaliencyUNet Topology</h3>
-<p>The network follows an ultra-efficient asymmetric encoder-decoder topology. The complete signal flow, channel dimensions, and skip connection routing are illustrated in the Mermaid lifecycle flowchart below:</p>
+<p>The network follows an ultra-efficient asymmetric encoder-decoder topology. The complete signal flow, channel dimensions, and skip connection routing are illustrated in the architecture lifecycle flowchart below:</p>
+<p><img alt="FastSaliencyUNet Architecture Flowchart" src="figures/architecture_mermaid.png" /></p>
+<details>
+<summary><b>Click to view native Mermaid flowchart specification</b></summary>
+
+
 <pre class="codehilite"><code class="language-mermaid">flowchart TD
     classDef input fill:#f8fafc,stroke:#64748b,stroke-width:2px,color:#0f172a,font-size:12px
     classDef stem fill:#e0e7ff,stroke:#4338ca,stroke-width:2px,color:#0f172a,font-size:12px
@@ -318,6 +323,9 @@ $$\text{CES} = Q \times \max\left(0, 1 - \text{Penalty}} - 4.194304}{4.194304<em
     Dec1 --&gt; Head[&quot;&lt;b&gt;Output Prediction Head&lt;/b&gt;&lt;br/&gt;Bilinear Up (2×) + 3×3 Conv + 1×1 Conv&lt;br/&gt;256×256×1 Logits&quot;]:::head
     Head --&gt; Out[&quot;&lt;b&gt;Binary Mask Output&lt;/b&gt;&lt;br/&gt;Sigmoid ≥ 0.5 Threshold&lt;br/&gt;256×256 uint8 {0, 255}&quot;]:::out
 </code></pre>
+
+
+</details>
 
 <h3>3.2 Key Architectural Innovations</h3>
 <h4>1. Depthwise Separable Convolutions</h4>
