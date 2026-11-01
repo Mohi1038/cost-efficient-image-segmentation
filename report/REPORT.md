@@ -22,7 +22,7 @@ By synthesizing depthwise separable convolutions, inverted residual bottlenecks,
 - **Total Parameters**: 118,297 parameters (built and trained strictly from scratch with zero pre-trained weights).
 - **On-disk Storage ($S_{disk}$)**: 300,819 bytes ($0.287\text{ MiB}$), utilizing only $7.17\%$ of the 4.0 MiB allowance.
 - **Single-Core CPU Runtime ($T_{CPU}$)**: 24.75 ms, providing $50.5\%$ safety headroom beneath the 50 ms budget limit.
-- **Budget Penalties**: 1.28% on DUTS-TE under the assignment's proportional in-budget formula.
+- **Budget Penalties**: 10.62% total on DUTS-TE under the assignment's proportional in-budget formula (9.90% time + 0.72% storage).
 - **CES Score**: **0.5095** on DUTS-TE after applying the time and storage terms.
 
 ---
@@ -32,8 +32,8 @@ By synthesizing depthwise separable convolutions, inverted residual bottlenecks,
 In edge-device computer vision and embedded real-time robotics, raw pixel accuracy is meaningless if inference latency violates hardware refresh deadlines or if model binaries exceed embedded flash storage limits.
 
 The **Cost-Efficient Segmentation (CES)** objective penalizes pipelines exceeding the $50\text{ ms}$ single-thread latency boundary or the $4.194304\text{ MB}$ parameter storage limit:
-$$\text{Penalty}_{time} = 0.20 \times \max\left(0, \frac{T_{CPU} - 50}{50}\right)$$
-$$\text{Penalty}_{size} = 0.10 \times \max\left(0, \frac{S_{disk} - 4.194304}{4.194304}\right)$$
+$$\text{Penalty}_{time} = 0.20 \times \frac{T_{CPU}}{50} \quad (T_{CPU} \le 50\text{ ms})$$
+$$\text{Penalty}_{size} = 0.10 \times \min\left(1, \frac{S_{disk}}{4.194304}\right)$$
 $$\text{CES} = Q \times \max\left(0, 1 - \text{Penalty}_{time} - \text{Penalty}_{size}\right)$$
 
 ### CES Objective Surface & Pareto Frontier
@@ -164,9 +164,9 @@ All metrics are implemented strictly from scratch according to assignment specif
 
 | Dataset / Split | Sample Count | Foreground Area Ratio | mIoU | BF1 | Quality ($Q$) | $T_{CPU}$ (ms) | $S_{disk}$ (Bytes) | Budget Penalty | Final CES Score |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| **Validation Set (DUTS-TR 10% Split)** | 1,055 | $18.4\%$ | **0.7975** | **0.5223** | **0.7149** | — | 300,819 | 1.28% | — |
+| **Validation Set (DUTS-TR 10% Split)** | 1,055 | $18.4\%$ | **0.7975** | **0.5223** | **0.7149** | — | 300,819 | 0.72% storage-only | — |
 | **DUTS-TE (Official Test Benchmark)** | 5,019 | $16.9\%$ | **0.6596** | **0.3611** | **0.5701** | **24.75 ms** | **300,819** | **10.62%** | **0.5095** |
-| **Captured Campus Photos (7 Items)** | 7 | $28.2\%$ | **0.7389** | **0.4711** | **0.6586** | — | 300,819 | 1.28% | — |
+| **Captured Campus Photos (7 Items)** | 7 | $28.2\%$ | **0.7389** | **0.4711** | **0.6586** | — | 300,819 | 0.72% storage-only | — |
 
 *Note: The assignment applies proportional terms even inside the hard limits:*
 $$\text{Penalty}_{time} = 0.20 \times \frac{24.75}{50} = 0.0990$$

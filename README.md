@@ -17,9 +17,9 @@ This project implements an ultra-compact, high-speed deep convolutional segmenta
 
 | Dataset / Split | Number of Images | mIoU | BF1 | Quality ($Q$) | $T_{CPU}$ (ms) | $S_{disk}$ | Budget Penalty | CES Score |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| **Validation Set (DUTS-TR 10% Split)** | 1,055 | **0.7975** | **0.5223** | **0.7149** | — | 300,819 Bytes | 1.28% | — |
-| **DUTS-TE (Official Test Set)** | 5,019 | **0.6596** | **0.3611** | **0.5701** | **24.75 ms** | **300,819 Bytes** | **1.28%** | **0.5095** |
-| **Captured Campus Photos** | 7 | **0.7389** | **0.4711** | **0.6586** | — | 300,819 Bytes | **1.28%** | — |
+| **Validation Set (DUTS-TR 10% Split)** | 1,055 | **0.7975** | **0.5223** | **0.7149** | — | 300,819 Bytes | 0.72% storage-only | — |
+| **DUTS-TE (Official Test Set)** | 5,019 | **0.6596** | **0.3611** | **0.5701** | **24.75 ms** | **300,819 Bytes** | **10.62% total** | **0.5095** |
+| **Captured Campus Photos** | 7 | **0.7389** | **0.4711** | **0.6586** | — | 300,819 Bytes | **0.72% storage-only** | — |
 
 > **Key Takeaway**: The pipeline stays within both hard limits, but the assignment formula still applies proportional penalties inside the limits. With $T_{CPU}=24.75\text{ ms}$ and $S_{disk}=300,819\text{ Bytes}$, the DUTS-TE result is $Q=0.5701$ and $\text{CES}=\mathbf{0.5095}$.
 
