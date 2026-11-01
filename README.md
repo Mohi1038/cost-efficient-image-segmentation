@@ -1,7 +1,7 @@
 # CSL7360: Computer Vision — Assignment 2
 ## Cost-Efficient Saliency Segmentation under a Compute Budget
 
-**Student Name / Roll Number**: Mohit / B23CS1038  
+**Student Name / Roll Number**: Mohit Meemrauth / B23CS1038<br />
 **Institution**: Indian Institute of Technology Jodhpur  
 **Track Chosen**: Track B (Custom Small CNN — `FastSaliencyUNet`)
 
@@ -17,11 +17,11 @@ This project implements an ultra-compact, high-speed deep convolutional segmenta
 
 | Dataset / Split | Number of Images | mIoU | BF1 | Quality ($Q$) | $T_{CPU}$ (ms) | $S_{disk}$ | Budget Penalty | CES Score |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| **Validation Set (DUTS-TR 10% Split)** | 1,055 | **0.8225** | **0.5830** | **0.7506** | 22.84 ms | 300,819 Bytes | 0.00% | **0.7506** |
-| **DUTS-TE (Official Test Set)** | 5,019 | **0.6566** | **0.3704** | **0.5707** | **23.09 ms** | **300,819 Bytes** | **0.00%** | **0.5707** |
-| **Captured Campus Photos** | 7 | **0.9583** | **0.9959** | **0.9696** | **22.35 ms** | 300,819 Bytes | 0.00% | **0.9696** |
+| **Validation Set (DUTS-TR 10% Split)** | 1,055 | **0.7975** | **0.5223** | **0.7149** | — | 300,819 Bytes | 1.28% | — |
+| **DUTS-TE (Official Test Set)** | 5,019 | **0.6596** | **0.3611** | **0.5701** | **24.75 ms** | **300,819 Bytes** | **1.28%** | **0.5095** |
+| **Captured Campus Photos** | 7 | **0.7389** | **0.4711** | **0.6586** | — | 300,819 Bytes | **1.28%** | — |
 
-> **Key Takeaway**: Because our single-core CPU time $T_{CPU} = 23.09\text{ ms} \le 50\text{ ms}$ and model weight file $S_{disk} = 300,819\text{ Bytes} \approx 0.287\text{ MB} \ll 4.0\text{ MB}$, both compute and storage penalties evaluate strictly to **zero**. The pipeline retains **100% of the Quality score**: $\text{CES} = \mathbf{0.5707}$.
+> **Key Takeaway**: The pipeline stays within both hard limits, but the assignment formula still applies proportional penalties inside the limits. With $T_{CPU}=24.75\text{ ms}$ and $S_{disk}=300,819\text{ Bytes}$, the DUTS-TE result is $Q=0.5701$ and $\text{CES}=\mathbf{0.5095}$.
 
 ---
 
@@ -91,16 +91,13 @@ python evaluate.py --skip-timing
 ├── dataset.py                   # DUTS and captured dataset loaders with augmentations
 ├── metrics.py                   # mIoU, Boundary F1 (BF1), and Quality Q calculations
 ├── evaluate.py                  # Evaluation script across validation, DUTS-TE, and captured sets
-├── generate_report_figures.py   # Visual comparison and overlay figure generator
-├── build_html_report.py         # Markdown-to-HTML report compiler
 ├── captured/                    # 7 phone photos covering all 5 required conditions
 │   ├── original/                # Original full-resolution phone photos
 │   ├── images_256/              # Resized 256x256 test photos
 │   └── masks_256/               # Manually annotated ground truth masks (DUTS format)
 ├── report/
 │   ├── REPORT.md                # Full academic project report (Markdown)
-│   ├── REPORT.html              # Styled standalone HTML report
-│   ├── REPORT.pdf               # Print-ready compiled PDF report
+│   ├── REPORT.pdf              # Print-ready compiled PDF report
 │   └── figures/                 # All generated high-resolution overlays and curves
 └── README.md                    # Project documentation and reproduction guide
 ```

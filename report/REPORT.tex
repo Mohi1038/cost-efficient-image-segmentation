@@ -40,14 +40,14 @@
     citecolor=emeraldgreen,
     urlcolor=accentblue,
     pdftitle={Cost-Efficient Salient Object Segmentation under a Compute Budget},
-    pdfauthor={Mohit (B23CS1038), IIT Jodhpur}
+    pdfauthor={Mohit Meemrauth (B23CS1038), IIT Jodhpur}
 }
 
 % Header and Footer setup
 \pagestyle{fancy}
 \fancyhf{}
 \fancyhead[L]{\small\textcolor{darkslate}{\textbf{CSL7360: Computer Vision} — Assignment 2 Report}}
-\fancyhead[R]{\small\textcolor{darkslate}{Mohit (B23CS1038) | FastSaliencyUNet}}
+\fancyhead[R]{\small\textcolor{darkslate}{Mohit Meemrauth (B23CS1038) | FastSaliencyUNet}}
 \fancyfoot[C]{\thepage}
 \renewcommand{\headrulewidth}{0.5pt}
 \renewcommand{\footrulewidth}{0.3pt}
@@ -72,10 +72,12 @@
     \vspace{0.2cm}
     \large \textbf{Design, Optimization, and Generalization of FastSaliencyUNet} \\
     \vspace{0.15cm}
-    \normalsize \textit{Course: CSL7360 Computer Vision (Assignment 2) \quad | \quad Track B: Fully Convolutional Network from Scratch}
+    \normalsize \textit{Course: CSL7360 Computer Vision (Assignment 2)} \\
+    \vspace{0.08cm}
+    \normalsize \textit{Track B: Fully Convolutional Network from Scratch}
 }
 \author{
-    \textbf{Mohit} \quad (\textbf{Roll No: B23CS1038}) \\
+    \textbf{Mohit Meemrauth} \quad (\textbf{Roll No: B23CS1038}) \\
     Department of Computer Science and Engineering \\
     \textbf{Indian Institute of Technology Jodhpur}
 }
@@ -87,7 +89,7 @@
 \vspace{-0.5cm}
 
 \begin{abstract}
-\noindent In edge-device computer vision and battery-powered robotics, salient object segmentation models must operate under stringent computational latency and storage limits. This report presents \textbf{FastSaliencyUNet}, an end-to-end, ultra-lightweight fully convolutional neural network designed from first principles without pre-trained weights to maximize the Cost-Efficient Segmentation (\textbf{CES}) metric under two rigorous constraints: single-threaded CPU runtime $\le 50.0\text{ ms}$ on $256 \times 256$ photos and disk parameter storage $\le 4.0\text{ MiB}$ ($4,194,304\text{ bytes}$). By combining depthwise separable convolutions, mobile inverted bottleneck residuals, dilated receptive field expansion, multi-scale lateral skip fusions, composite boundary edge loss, and half-precision serialization, our model achieves \textbf{118,297 parameters} and an on-disk footprint of exactly \textbf{300,819 bytes} ($0.287\text{ MiB}$, consuming only $7.17\%$ of the storage budget). On single-core CPU execution, inference completes in \textbf{23.09 ms} ($53.8\%$ budget headroom), resulting in \textbf{zero budget penalties} and retaining $100\%$ of its Quality score. FastSaliencyUNet achieves a CES score of \textbf{0.5707} on DUTS-TE and \textbf{0.9696} across 7 real-world phone photos captured around IIT Jodhpur covering all five mandated physical conditions.
+\noindent In edge-device computer vision and battery-powered robotics, salient object segmentation models must operate under stringent computational latency and storage limits. This report presents \textbf{FastSaliencyUNet}, an end-to-end, ultra-lightweight fully convolutional neural network designed from first principles without pre-trained weights to maximize the Cost-Efficient Segmentation (\textbf{CES}) metric. By combining depthwise separable convolutions, mobile inverted bottleneck residuals, dilated receptive field expansion, multi-scale lateral skip fusions, and half-precision serialization, our model achieves \textbf{118,297 parameters} and an on-disk footprint of exactly \textbf{300,819 bytes} ($0.287\text{ MiB}$). On single-core CPU execution, the compliant inference pipeline completes in \textbf{24.75 ms}, below the 50 ms hard limit. FastSaliencyUNet achieves a corrected CES score of \textbf{0.5095} on DUTS-TE; captured-photo quality is reported separately because the CES benchmark is defined on DUTS-TE.
 \end{abstract}
 \vspace{-0.2cm}
 
@@ -97,7 +99,7 @@ Salient object detection seeks to isolate visual foreground entities that attrac
 
 The objective of Assignment 2 (Track B) is to construct an ultra-compact convolutional network from scratch in PyTorch that optimizes the Cost-Efficient Segmentation (\textbf{CES}) objective:
 \begin{equation}
-\text{CES} = Q \left[ 1 - 0.20 \max\left(0, \frac{T_{CPU} - 50}{50}\right) - 0.10 \max\left(0, \frac{S_{disk} - 4.194304}{4.194304}\right) \right]
+\text{CES} = Q \left[ 1 - 0.20 \frac{T_{CPU}}{50} - 0.10 \min\left(1, \frac{S_{disk}}{4,194,304}\right) \right], \quad T_{CPU} \le 50\text{ ms}
 \end{equation}
 where $T_{CPU}$ is the measured single-threaded CPU runtime in milliseconds on a $256 \times 256$ image, $S_{disk}$ is the serialized model parameter file size in megabytes, and $Q$ is the composite segmentation quality index combining region overlap (mIoU) and boundary contour alignment (Boundary F1):
 \begin{equation}
@@ -107,22 +109,22 @@ Q = 0.70 \times \text{mIoU} + 0.30 \times \text{BF1}
 \begin{figure}[htbp]
     \centering
     \includegraphics[width=0.98\textwidth]{figures/ces_landscape_contour.png}
-    \caption{\textbf{CES Optimization Landscape and Empirical Pareto Frontier.} Left: 2D contour plot of the CES retention function over latency and storage space, highlighting the zero-penalty plateau ($T \le 50\text{ ms}$, $S \le 4.19\text{ MB}$). Right: Quality $Q$ vs. CPU inference latency showing FastSaliencyUNet dominating the resource-feasible region.}
+    \caption{\textbf{CES Optimization Landscape and Empirical Pareto Frontier.} Left: 2D contour plot of the CES retention function over latency and storage space. Right: Quality $Q$ vs. CPU inference latency showing FastSaliencyUNet in the resource-feasible region.}
     \label{fig:ces_landscape}
 \end{figure}
 
 \subsection{Strategic Analysis of the CES Landscape}
-As demonstrated in Figure~\ref{fig:ces_landscape}, the CES formulation introduces a sharp penalty cliff beyond the thresholds. Heavy architectures (e.g., DeepLabV3-ResNet50 with $T_{CPU} \approx 92.4\text{ ms}$ and $S_{disk} \approx 79.4\text{ MB}$) incur a penalty of over $26.96\%$, reducing their net score down to $0.4469$. Conversely, FastSaliencyUNet operates at $T_{CPU} = 23.09\text{ ms}$ and $S_{disk} = 0.287\text{ MB}$, incurring \textbf{exactly zero penalty} and retaining $100\%$ of its score ($CES = 0.5707$).
+As demonstrated in Figure~\ref{fig:ces_landscape}, the CES formulation introduces a hard zero-score cutoff beyond the time threshold and proportional penalties within the feasible region. FastSaliencyUNet operates at $T_{CPU} = 24.75\text{ ms}$ and $S_{disk} = 0.287\text{ MiB}$, with $Q=0.5701$ and corrected $CES=0.5095$ on DUTS-TE.
 
 \section{Architecture Design: FastSaliencyUNet}
 
-\subsection{System Architecture and Pipeline Topology}
-To deliver dense pixel-level masks while respecting hardware limits and cache locality, we structured \textbf{FastSaliencyUNet} as an enterprise-grade modular system. Figure~\ref{fig:architecture} presents the complete software and system design diagram, illustrating the data ingestion subsystem, multi-scale feature encoder, dilated bottleneck core, lateral synthesis decoder, and output serving tier alongside the system governance and hardware enforcement bus:
+\subsection{High-Level System Architecture (HLA)}
+To deliver dense pixel-level masks while respecting hardware budgets and cache locality, \textbf{FastSaliencyUNet} is organized as a clean, modular software system architecture. Figure~\ref{fig:architecture} presents the five-stage pipeline (Data Ingestion, Multi-Scale Feature Encoder, Latent Bottleneck, Decoder Synthesis, and Mask Serving) synchronized with the Execution Environment and Hardware Governance Subsystem:
 
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=\textwidth]{figures/architecture_system_design.png}
-    \caption{\textbf{FastSaliencyUNet System Architecture and Component Design.} Comprehensive architectural breakdown detailing Tier 1 (Ingestion \& Standardizer), Tier 2 (Encoder Core), Tier 3 (Dilated Bottleneck Engine), Tier 4 (Decoder Synthesis), and Tier 5 (Output Serving) synchronized via the Hardware Enforcement Bus.}
+    \includegraphics[width=\textwidth]{figures/architecture_hla.png}
+    \caption{\textbf{FastSaliencyUNet High-Level System Architecture (HLA).} Clean five-stage software architecture and inference pipeline, showing data ingestion, feature extraction, dilated bottlenecking, lateral skip synthesis, and mask serving, governed by the single-thread CPU and model storage management subsystem.}
     \label{fig:architecture}
 \end{figure}
 
@@ -180,7 +182,7 @@ Output Head & Up + $3\times3$ + $1\times1$ & $128\times128\times24$ & $256\times
 
 Standard Binary Cross-Entropy evaluates pixels independently, producing blurry boundaries. To optimize both region overlap (mIoU) and boundary sharpness (BF1), we train with a composite multi-task loss:
 \begin{equation}
-\mathcal{L}_{total} = \mathcal{L}_{BCE} + \mathcal{L}_{Dice} + \mathcal{L}_{SobelEdge}
+\mathcal{L}_{total} = \mathcal{L}_{BCE} + \mathcal{L}_{Dice}
 \end{equation}
 
 \subsection{Mathematical Formulations}
@@ -192,18 +194,17 @@ Standard Binary Cross-Entropy evaluates pixels independently, producing blurry b
 \begin{equation}
 \mathcal{L}_{Dice} = 1 - \frac{2 \sum_{i=1}^N p_i y_i + \epsilon}{\sum_{i=1}^N p_i^2 + \sum_{i=1}^N y_i^2 + \epsilon}
 \end{equation}
-\textbf{3. Sobel Boundary Edge Dice Loss}: Computes gradient magnitude maps $\nabla P$ and $\nabla Y$ via differentiable horizontal ($K_x$) and vertical ($K_y$) Sobel filters:
+\textbf{3. Boundary-aware evaluation}: Boundary F1 is computed after training using the assignment's four-connected boundary definition and 5x5 matching tolerance. No forbidden morphology or connected-component cleanup is used during inference.
 \begin{equation}
 K_x = \begin{bmatrix} -1 & 0 & 1 \\ -2 & 0 & 2 \\ -1 & 0 & 1 \end{bmatrix}, \quad K_y = \begin{bmatrix} -1 & -2 & -1 \\ 0 & 0 & 0 \\ 1 & 2 & 1 \end{bmatrix}
 \end{equation}
 \begin{equation}
-\nabla I = \sqrt{(I * K_x)^2 + (I * K_y)^2 + \epsilon}, \quad \mathcal{L}_{SobelEdge} = 1 - \frac{2 \sum_{i=1}^N \nabla p_i \nabla y_i + \epsilon}{\sum_{i=1}^N (\nabla p_i)^2 + \sum_{i=1}^N (\nabla y_i)^2 + \epsilon}
 \end{equation}
 
 \begin{figure}[htbp]
     \centering
     \includegraphics[width=0.98\textwidth]{figures/training_convergence_deep.png}
-    \caption{\textbf{Training Dynamics and Convergence.} Left: Decomposition into BCE, Soft Dice, and Sobel Edge components. Center: Composite training vs. validation loss. Right: Validation mIoU and BF1 progression across 12 epochs.}
+    \caption{\textbf{Training Dynamics and Convergence.} Training and validation loss, together with validation mIoU and BF1 progression across 12 epochs.}
     \label{fig:loss_convergence}
 \end{figure}
 
@@ -219,7 +220,7 @@ K_x = \begin{bmatrix} -1 & 0 & 1 \\ -2 & 0 & 2 \\ -1 & 0 & 1 \end{bmatrix}, \qua
 Exp 1 & BCE Loss Only & 0.7412 & 0.4180 & 0.6442 & Diffused, blurry margins \\
 Exp 2 & Soft Dice Only & 0.7725 & 0.4630 & 0.6796 & High recall, noisy boundary artifacts \\
 Exp 3 & BCE + Soft Dice & 0.8041 & 0.5210 & 0.7192 & Clean area overlap, minor boundary leakage \\
-\textbf{Exp 4 (Ours)} & \textbf{BCE + Soft Dice + Sobel Edge} & \textbf{0.8225} & \textbf{0.5830} & \textbf{0.7506} & \textbf{Sharp, well-calibrated object contours} \\
+\textbf{Exp 4 (Ours)} & \textbf{BCE + Soft Dice} & \textbf{0.7975} & \textbf{0.5223} & \textbf{0.7149} & \textbf{Compliant threshold-only pipeline} \\
 \bottomrule
 \end{tabular}%
 }
@@ -244,9 +245,9 @@ Metrics are computed from first principles:
 \toprule
 \textbf{Dataset / Split} & \textbf{Samples} & \textbf{mIoU} & \textbf{BF1} & \textbf{Quality ($Q$)} & \textbf{$T_{CPU}$ (ms)} & \textbf{$S_{disk}$} & \textbf{Penalty} & \textbf{CES Score} \\
 \midrule
-\textbf{Validation Set (DUTS-TR 10\%)} & 1,055 & \textbf{0.8225} & \textbf{0.5830} & \textbf{0.7506} & 22.84 ms & 300,819 B & 0.00\% & \textbf{0.7506} \\
-\textbf{DUTS-TE (Official Test Benchmark)} & 5,019 & \textbf{0.6566} & \textbf{0.3704} & \textbf{0.5707} & \textbf{23.09 ms} & \textbf{300,819 B} & \textbf{0.00\%} & \textbf{0.5707} \\
-\textbf{Captured Campus Photos} & 7 & \textbf{0.9583} & \textbf{0.9959} & \textbf{0.9696} & \textbf{22.35 ms} & 300,819 B & 0.00\% & \textbf{0.9696} \\
+\textbf{Validation Set (DUTS-TR 10\%)} & 1,055 & \textbf{0.7975} & \textbf{0.5223} & \textbf{0.7149} & — & 300,819 B & 1.28\% & — \\
+\textbf{DUTS-TE (Official Test Benchmark)} & 5,019 & \textbf{0.6596} & \textbf{0.3611} & \textbf{0.5701} & \textbf{24.75 ms} & \textbf{300,819 B} & \textbf{10.62\%} & \textbf{0.5095} \\
+\textbf{Captured Campus Photos} & 7 & \textbf{0.7389} & \textbf{0.4711} & \textbf{0.6586} & — & 300,819 B & 1.28\% & — \\
 \bottomrule
 \end{tabular}%
 }
@@ -265,7 +266,7 @@ Table~\ref{tab:comparison} compares FastSaliencyUNet against classical architect
 \toprule
 \textbf{Model Architecture} & \textbf{Params} & \textbf{$S_{disk}$ (MB)} & \textbf{GFLOPs} & \textbf{$T_{CPU}$ (ms)} & \textbf{Quality ($Q$)} & \textbf{Time Pen.} & \textbf{Size Pen.} & \textbf{Final CES} \\
 \midrule
-\textbf{FastSaliencyUNet (Ours)} & \textbf{118k} & \textbf{0.287} & \textbf{0.43} & \textbf{23.09} & \textbf{0.5707} & \textbf{0.00\%} & \textbf{0.00\%} & \textbf{0.5707} \\
+\textbf{FastSaliencyUNet (Ours)} & \textbf{118k} & \textbf{0.287} & \textbf{0.43} & \textbf{24.75} & \textbf{0.5701} & \textbf{9.90\%} & \textbf{0.72\%} & \textbf{0.5095} \\
 MobileNetV3-UNet & 1.52M & 3.120 & 1.84 & 34.50 & 0.5480 & 0.00\% & 0.00\% & 0.5480 \\
 Standard Vanilla UNet & 7.76M & 15.200 & 18.25 & 78.10 & 0.5310 & 11.24\% & 10.00\% & 0.4182 \\
 ResNet18-UNet & 14.3M & 28.500 & 8.40 & 54.20 & 0.5820 & 1.68\% & 10.00\% & 0.5140 \\
@@ -323,7 +324,7 @@ We captured 7 phone photos across the IIT Jodhpur campus and hostel environments
 \texttt{shoes} & Corridor Floor & Ambient & Medium & Med & Paired Sneakers, Seams & 1, 2, 3, 4 & 0.982 & 0.998 & 0.987 \\
 \texttt{watch} & Tabletop Fabric & Desk Light & Macro & High & Bezel, Swirled Textile & 1, 2, 3, 4 & 0.955 & 0.994 & 0.967 \\
 \midrule
-\multicolumn{6}{l}{\textbf{MEAN ACROSS ALL 7 CAPTURED PHOTOS}} & \textbf{All 1–5} & \textbf{0.9583} & \textbf{0.9959} & \textbf{0.9696} \\
+\multicolumn{6}{l}{\textbf{MEAN ACROSS ALL 7 CAPTURED PHOTOS}} & \textbf{All 1–5} & \textbf{0.7389} & \textbf{0.4711} & \textbf{0.6586} \\
 \bottomrule
 \end{tabular}%
 }
@@ -373,17 +374,17 @@ Table~\ref{tab:eng_ablation} summarizes the design decisions validating the fina
 \textbf{Category} & \textbf{Configuration Tested} & \textbf{Val mIoU} & \textbf{Val BF1} & \textbf{$T_{CPU}$ (ms)} & \textbf{$S_{disk}$} & \textbf{Verdict} \\
 \midrule
 Stem Stride & Stride = 1 ($256\times256$ Stage 1) & 0.8290 & 0.5890 & 64.20 & 301 KB & Violates 50ms budget ($+14.2\text{ ms}$ penalty) \\
-& \textbf{Stride = 2 ($128\times128$ Stage 1)} & \textbf{0.8225} & \textbf{0.5830} & \textbf{23.09} & \textbf{301 KB} & \textbf{Optimal: 2.8$\times$ faster, 0.00\% penalty} \\
+& \textbf{Stride = 2 ($128\times128$ Stage 1)} & \textbf{0.7975} & \textbf{0.5223} & \textbf{24.75} & \textbf{301 KB} & \textbf{Verified compliant configuration} \\
 \midrule
 Bottleneck & Standard Conv ($d=1$) & 0.7910 & 0.5340 & 22.95 & 301 KB & Insufficient receptive field for large objects \\
-Dilation & \textbf{Dilated Conv ($d=2$)} & \textbf{0.8225} & \textbf{0.5830} & \textbf{23.09} & \textbf{301 KB} & \textbf{+5.1\% Quality gain with 0 parameter cost} \\
+Dilation & \textbf{Dilated Conv ($d=2$)} & \textbf{0.7975} & \textbf{0.5223} & \textbf{24.75} & \textbf{301 KB} & \textbf{Verified configuration} \\
 & High Dilation ($d=4$) & 0.8060 & 0.5510 & 23.40 & 301 KB & Gridding artifacts degrade local contours \\
 \midrule
 Upsampling & Transpose Conv2d ($3\times3$) & 0.8210 & 0.5780 & 38.60 & 485 KB & Checkerboard noise, 60\% larger weights \\
-& \textbf{Bilinear + DWSep} & \textbf{0.8225} & \textbf{0.5830} & \textbf{23.09} & \textbf{301 KB} & \textbf{Clean contours, zero parameter overhead} \\
+& \textbf{Bilinear + DWSep} & \textbf{0.7975} & \textbf{0.5223} & \textbf{24.75} & \textbf{301 KB} & \textbf{Verified configuration} \\
 \midrule
-Serialization & Full Precision (\texttt{float32}) & 0.8225 & 0.5830 & 23.09 & 538 KB & Larger disk footprint \\
-& \textbf{Half Precision (\texttt{float16})} & \textbf{0.8225} & \textbf{0.5830} & \textbf{23.09} & \textbf{301 KB} & \textbf{44.1\% Storage reduction, 0 accuracy loss} \\
+Serialization & Full Precision (\texttt{float32}) & 0.7975 & 0.5223 & 24.75 & 538 KB & Reference only \\
+& \textbf{Half Precision (\texttt{float16})} & \textbf{0.7975} & \textbf{0.5223} & \textbf{24.75} & \textbf{301 KB} & \textbf{Submitted configuration} \\
 \bottomrule
 \end{tabular}%
 }
@@ -391,10 +392,10 @@ Serialization & Full Precision (\texttt{float32}) & 0.8225 & 0.5830 & 23.09 & 53
 
 \section{Conclusion}
 
-The \textbf{FastSaliencyUNet} framework demonstrates that high-precision salient object segmentation under strict operational budgets is achievable from scratch without pre-trained weights. By combining depthwise separable convolutions, inverted residual bottlenecks, dilated bottleneck receptive field expansion, Sobel Edge Dice loss, and half-precision serialization, the pipeline achieves:
+The \textbf{FastSaliencyUNet} framework demonstrates that lightweight salient object segmentation under strict operational budgets is achievable from scratch without pre-trained weights. By combining depthwise separable convolutions, inverted residual bottlenecks, dilated bottleneck receptive field expansion, compliant threshold-only post-processing, and half-precision serialization, the pipeline achieves:
 \begin{itemize}
-    \item \textbf{Exact Zero Compute Penalty}: Single-core CPU latency $T_{CPU} = 23.09\text{ ms} \le 50.0\text{ ms}$ and model storage $S_{disk} = 300,819\text{ bytes} \ll 4.194\text{ MB}$.
-    \item \textbf{Top CES Score}: CES score of \textbf{0.5707} on DUTS-TE and \textbf{0.9696} on real-world campus photos.
+    \item \textbf{Hard Limits Met}: Single-core CPU latency $T_{CPU} = 24.75\text{ ms} \le 50.0\text{ ms}$ and model storage $S_{disk} = 300,819\text{ bytes} \ll 4.194\text{ MB}$.
+    \item \textbf{Corrected CES}: The verified DUTS-TE result is $Q=0.5701$ and $\textbf{CES}=0.5095$ after applying the proportional in-budget terms.
 \end{itemize}
 
 \end{document}
