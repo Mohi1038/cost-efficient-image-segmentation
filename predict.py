@@ -68,62 +68,18 @@ def fast_guided_filter(guide_gray: np.ndarray, p: np.ndarray, r: int = 6, eps: f
 
 def postprocess_saliency(prob: np.ndarray, photo_bgr: np.ndarray, th: float = 0.65) -> np.ndarray:
     """
-    Fast edge-guided post-processing pipeline (< 1.8 ms total).
-    1. Edge-preserving guided filtering with grayscale guide.
-    2. Adaptive thresholding.
-    3. Morphological opening to sever thin spurious bridges.
-    4. Saliency-mass connected component selection.
-    5. Clean interior hole filling.
+    Fast edge-guided post-processing pipeline.
+
+    The assignment disallows morphology and connected-component cleanup, so
+    inference is limited to the permitted guided box filtering and threshold.
     """
     gray = cv2.cvtColor(photo_bgr, cv2.COLOR_BGR2GRAY)
     
     # 1. Guided edge sharpening
     guided_p = fast_guided_filter(gray, prob, r=6, eps=1e-3)
     
-    # 2. Binary threshold
-    binary = (guided_p >= th).astype(np.uint8)
-    
-    # 3. Morphological opening (kernel 3x3)
-    k_open = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
-    opened = cv2.morphologyEx(binary, cv2.MORPH_OPEN, k_open)
-    
-    # 4. Connected components
-    num_labels, labels, stats, centroids = cv2.connectedComponentsWithStats(opened)
-    if num_labels <= 1:
-        return opened
-        
-    cleaned = np.zeros_like(opened)
-    h, w = prob.shape
-    cy, cx = h / 2.0, w / 2.0
-    
-    scores = []
-    for lbl in range(1, num_labels):
-        area = stats[lbl, cv2.CC_STAT_AREA]
-        if area < 100:  # Suppress tiny background noise
-            continue
-        comp_mask = (labels == lbl)
-        mean_sal = prob[comp_mask].mean()
-        if mean_sal < 0.45:  # Drop low-confidence blobs
-            continue
-        cen_x, cen_y = centroids[lbl]
-        dist = np.sqrt((cen_x - cx)**2 + (cen_y - cy)**2) / (w * 0.5)
-        # sal**2 strongly down-weights medium-confidence regions to reduce over-prediction
-        score = area * (mean_sal ** 2.0) / (1.0 + 0.3 * dist)
-        scores.append((score, lbl))
-        
-    if scores:
-        scores.sort(reverse=True)
-        top_score = scores[0][0]
-        for sc, lbl in scores:
-            if sc >= 0.20 * top_score:  # Stricter: keep only dominant components
-                cleaned[labels == lbl] = 1
-    else:
-        cleaned = opened
-        
-    # 5. Fill tiny interior pinholes without filling structural geometric voids (e.g. bike frames)
-    k_close = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
-    filled = cv2.morphologyEx(cleaned, cv2.MORPH_CLOSE, k_close)
-    return filled
+    # 2. Binary threshold. Keep values in the required {0, 1} representation.
+    return (guided_p >= th).astype(np.uint8)
 
 
 def run_pipeline(photo_256, model):

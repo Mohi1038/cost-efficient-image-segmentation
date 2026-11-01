@@ -22,6 +22,7 @@ torch.set_num_threads(1)
 from model import FastSaliencyUNet
 from dataset import get_duts_splits, get_test_dataset, SaliencyDataset
 from metrics import ConfusionMatrixMeter, compute_bf1_single, compute_ces_score
+from predict import run_pipeline
 
 # Normalization constants
 IMAGENET_MEAN = np.array([0.485, 0.456, 0.406], dtype=np.float32).reshape(1, 1, 3)
@@ -60,27 +61,12 @@ def evaluate_dataset(model, dataset, name="Dataset", measure_timing=False):
         img_tensor, mask_tensor = dataset[idx]
         true_mask = (mask_tensor[0].numpy() >= 0.5).astype(np.uint8)
 
-        # Timed pipeline if requested
+        # Evaluate the exact same pipeline used by predict.py. This keeps
+        # metrics and timing consistent with the submitted inference script.
+        photo_bgr = ((img_tensor.numpy().transpose(1, 2, 0) * IMAGENET_STD + IMAGENET_MEAN) * 255.0).astype(np.uint8)
+        pred_mask, elapsed_ms = run_pipeline(photo_bgr, model)
         if measure_timing:
-            # Reconstruct 256x256 BGR photo in memory to adhere strictly to Section 2b:
-            # "The timed part of your pipeline starts with a 256x256 photo in memory and ends with its mask"
-            photo_bgr = ((img_tensor.numpy().transpose(1, 2, 0) * IMAGENET_STD + IMAGENET_MEAN) * 255.0).astype(np.uint8)
-            
-            t0 = time.process_time()
-            rgb = cv2.cvtColor(photo_bgr, cv2.COLOR_BGR2RGB).astype(np.float32) * (1.0 / 255.0)
-            norm = (rgb - IMAGENET_MEAN) / IMAGENET_STD
-            t_in = torch.from_numpy(norm.transpose(2, 0, 1)).unsqueeze(0)
-            with torch.no_grad():
-                logits = model(t_in)
-                probs = torch.sigmoid(logits)
-            pred_mask = (probs[0, 0] >= 0.5).to(torch.uint8).numpy()
-            t1 = time.process_time()
-            cpu_times_ms.append((t1 - t0) * 1000.0)
-        else:
-            with torch.no_grad():
-                logits = model(img_tensor.unsqueeze(0))
-                probs = torch.sigmoid(logits)
-            pred_mask = (probs[0, 0] >= 0.5).to(torch.uint8).numpy()
+            cpu_times_ms.append(elapsed_ms)
 
         meter.update(pred_mask, true_mask)
         bf1 = compute_bf1_single(pred_mask, true_mask)
